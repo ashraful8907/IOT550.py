@@ -1,19 +1,39 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
+import os
 
-months = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
-sales = np.array([200, 220, 250, 270, 300, 310, 330, 360, 390, 420, 450, 480])
+# ---------- Step 1: Generate synthetic data ----------
+m_true = 2.0    # true slope
+b_true = 5.0    # true intercept
+n_points = 50
+noise = 3
 
-plt.scatter(months, sales, color='blue', label='Sales Data')
-coefficients = np.polyfit(months, sales, 1)  # 1 means linear
-slope, intercept = coefficients
+X = np.linspace(0, 10, n_points)
+Y = m_true * X + b_true + np.random.normal(0, noise, n_points)
 
-best_fit_line = slope * months + intercept
+# Save to CSV
+data = pd.DataFrame({'X': X, 'Y': Y})
+csv_path = 'synthetic_data.csv'
+data.to_csv(csv_path, index=False)
 
-plt.plot(months, best_fit_line, color='red', label='Best Fit Line')
+# ---------- Step 2: Fit a line ----------
+loaded_data = pd.read_csv(csv_path)
+X_loaded = loaded_data['X']
+Y_loaded = loaded_data['Y']
 
-plt.xlabel('Month')
-plt.ylabel('Sales')
-plt.title('Monthly Sales with Best Fit Line')
+m_fit, b_fit = np.polyfit(X_loaded, Y_loaded, 1)
+
+# ---------- Step 3: Plot ----------
+plt.scatter(X_loaded, Y_loaded, label='Data', color='blue')
+plt.plot(X_loaded, m_true * X_loaded + b_true, color='green', label='True Line')
+plt.plot(X_loaded, m_fit * X_loaded + b_fit, color='red', label='Fitted Line')
+plt.xlabel('X')
+plt.ylabel('Y')
+plt.title('Synthetic Data and Fitted Line')
 plt.legend()
-plt.show()
+
+plt.show()  # 👈 show the graph instead of saving
+
+print(f"True line: Y = {m_true:.2f}X + {b_true:.2f}")
+print(f"Fitted line: Y = {m_fit:.2f}X + {b_fit:.2f}")

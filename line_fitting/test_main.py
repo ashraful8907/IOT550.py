@@ -1,30 +1,45 @@
-import numpy as np
+import unittest
+import os
 import pandas as pd
-import matplotlib.pyplot as plt
+import numpy as np
 
-# Slope and intercept
-m = 2      # example slope
-b = 5      # example intercept
+class TestSyntheticData(unittest.TestCase):
 
-# Number of data points
-n_points = 50
+    def setUp(self):
+        """Load the data before running tests."""
+        self.csv_path = 'synthetic_data.csv'
+        self.plot_path = 'fit_plot.png'
+        self.m_true = 2.0
+        self.b_true = 5.0
+        self.tolerance = 0.5
 
-X = np.linspace(0, 10, n_points)  # generates 50 evenly spaced points between 0 and 10
+        # Load data if it exists
+        if os.path.exists(self.csv_path):
+            self.data = pd.read_csv(self.csv_path)
+        else:
+            self.data = None
 
-# Noise level (standard deviation)
-noise = 3
+    def test_csv_exists(self):
+        """Check that the CSV file was created."""
+        self.assertTrue(os.path.exists(self.csv_path), "CSV file not found!")
 
-# Generate Y values
-Y = m * X + b + np.random.normal(0, noise, n_points)
+    def test_plot_exists(self):
+        """Check that the plot file was saved."""
+        self.assertTrue(os.path.exists(self.plot_path), "Plot file not found!")
 
-# Create a DataFrame
-data = pd.DataFrame({'X': X, 'Y': Y})
+    def test_data_is_numeric(self):
+        """Ensure that all loaded data are numeric."""
+        self.assertIsNotNone(self.data, "Data not loaded!")
+        self.assertTrue(np.issubdtype(self.data['X'].dtype, np.number))
+        self.assertTrue(np.issubdtype(self.data['Y'].dtype, np.number))
 
-# Save to CSV
-data.to_csv('synthetic_data.csv', index=False)
+    def test_fit_line(self):
+        """Check fitted slope/intercept are close to the true values."""
+        X = self.data['X']
+        Y = self.data['Y']
+        m_fit, b_fit = np.polyfit(X, Y, 1)
+        self.assertAlmostEqual(m_fit, self.m_true, delta=self.tolerance)
+        self.assertAlmostEqual(b_fit, self.b_true, delta=self.tolerance)
 
-plt.scatter(X, Y)
-plt.xlabel('X')
-plt.ylabel('Y')
-plt.title('Synthetic Data with Noise')
-plt.show()
+if __name__ == '__main__':
+    unittest.main()

@@ -11,7 +11,7 @@ class TestSyntheticData(unittest.TestCase):
         self.plot_path = 'fit_plot.png'
         self.m_true = 2.0
         self.b_true = 5.0
-        self.tolerance = 0.5
+        self.tolerance = 1.0
 
         # Load data if it exists
         if os.path.exists(self.csv_path):

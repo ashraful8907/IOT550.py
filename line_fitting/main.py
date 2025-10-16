@@ -12,9 +12,16 @@ noise = 3
 X = np.linspace(0, 10, n_points)
 Y = m_true * X + b_true + np.random.normal(0, noise, n_points)
 
+# Get absolute paths
+import os
+
+# Folder where this script resides
+base_dir = os.path.dirname(os.path.abspath(__file__))  
+csv_path = os.path.join(base_dir, 'synthetic_data.csv')
+plot_path = os.path.join(base_dir, 'fit_plot.png')
+
 # Save to CSV
 data = pd.DataFrame({'X': X, 'Y': Y})
-csv_path = 'synthetic_data.csv'
 data.to_csv(csv_path, index=False)
 
 # ---------- Step 2: Fit a line ----------
@@ -33,7 +40,9 @@ plt.ylabel('Y')
 plt.title('Synthetic Data and Fitted Line')
 plt.legend()
 
-plt.show()  # 👈 show the graph instead of saving
+# Save the plot (absolute path)
+plt.savefig(plot_path)
+plt.close()
 
-print(f"True line: Y = {m_true:.2f}X + {b_true:.2f}")
-print(f"Fitted line: Y = {m_fit:.2f}X + {b_fit:.2f}")
+# Optional: display for your own check
+# plt.show()

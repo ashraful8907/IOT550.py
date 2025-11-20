@@ -2,10 +2,11 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 data = pd.read_csv("temperature_anomaly.csv")
 
 # Keep only needed columns
+data = data[data["Entity"] == "World"]
+print(data)
 data = data[["Year", "Global average temperature anomaly relative to 1861-1890"]]
 data.columns = ["Year", "Anomaly"]
 
@@ -15,10 +16,12 @@ data["Anomaly"] = pd.to_numeric(data["Anomaly"], errors="coerce")
 data = data.dropna()
 
 
-cutoff = data["Year"].max() - 10
+# Keep only the last 100 years
+last_100_years = data[data["Year"] >= data["Year"].max() - 100]
 
-train = data[data["Year"] <= cutoff]
-test  = data[data["Year"] > cutoff]
+# Split: first 90 years for training, last 10 for testing
+train = last_100_years.iloc[:-10]   # everything except last 10
+test  = last_100_years.iloc[-10:]   # last 10 rows
 
 x_train = train["Year"].values
 y_train = train["Anomaly"].values
@@ -26,28 +29,29 @@ y_train = train["Anomaly"].values
 x_test = test["Year"].values
 y_test = test["Anomaly"].values
 
-# ---------------------------
-# 3. FIT POLYNOMIALS DEGREE 1–9
-# ---------------------------
-
 results = {}
 
-for degree in range(1, 10):
-    coeffs = np.polyfit(x_train, y_train, degree) # Fitting polynomials degree 1-10
-    poly_model = np.poly1d(coeffs)
+degree = 6
 
-    # Predict the last 10 years (testing)
-    y_pred_test = poly_model(x_test)
+# Get coefficients AND covariance matrix
+coeffs, cov = np.polyfit(x_train, y_train, degree, cov=True)
+poly_model = np.poly1d(coeffs)
 
-    # Compute error
-    rmse = np.sqrt(np.mean((y_pred_test - y_test)**2))
+# Predictions
+y_pred_train = poly_model(x_train)
+y_pred_test  = poly_model(x_test)
 
-    # Store results
-    results[degree] = {
-        "model": poly_model,
-        "rmse": rmse
-    }
+# Error on test set
+rmse = np.sqrt(np.mean((y_pred_test - y_test)**2))
 
+results[degree] = {
+    "model": poly_model,
+    "rmse": rmse,
+    "pred_train": y_pred_train,
+    "pred_test": y_pred_test,
+    "coeffs": coeffs,
+    "covariance_matrix": cov
+}
 
 x_future = np.arange(train["Year"].max() + 1, train["Year"].max() + 11)
 
@@ -62,9 +66,26 @@ for degree in results:
 
 plt.xlabel("Year")
 plt.ylabel("Temperature Anomaly")
-plt.title("Polynomial Forecasts (Degrees 1–9)")
+plt.title("Polynomial Forecasts (Degree 6)")
 plt.legend()
 plt.show()
 
+all_tables = []
+
 for degree, info in results.items():
-    print(f"Degree {degree}: RMSE = {info['rmse']:.4f}")
+    df_train = pd.DataFrame({
+        "Degree": [degree] * len(x_train),
+        "Year": x_train,
+        "Actual": y_train,
+        "Predicted": info["model"](x_train)   # FIX: compute predictions here
+    })
+    all_tables.append(df_train)
+
+# Concatenate into one big DataFrame
+final_df = pd.concat(all_tables, ignore_index=True)
+
+# Save to CSV
+#final_df.to_csv("all_poly_fits.csv", index=False)
+
+print("Covariance matrix for degree 6:")
+print(results[6]["covariance_matrix"])
